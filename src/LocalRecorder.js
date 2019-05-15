@@ -73,6 +73,45 @@ export default class LocalRecorder {
               mimeType: this.mimeOptions,
               videoBitsPerSecond: 300000
             });
+
+
+            var audioContext = new AudioContext();
+            let analyser = audioContext.createAnalyser()
+            var microphone = audioContext.createMediaStreamSource(stream)
+            var script = audioContext.createScriptProcessor(2048,1,1);
+            // let instant = 0
+
+            analyser.smoothingTimeConstant = 0.8;
+            analyser.fftSize = 1024;
+            
+            script.onaudioprocess = event => {
+              var array = new Uint8Array(analyser.frequencyBinCount);
+              analyser.getByteFrequencyData(array);
+              var values = 0;
+
+              var length = array.length;
+              for (var i = 0; i < length; i++) {
+                values += (array[i]);
+              }
+
+              var average = values / length;
+
+              console.log(Math.round(average));
+
+              // // Do something with the data, i.e Convert this to WAV
+              // var input = event.inputBuffer.getChannelData(0)
+              // var i
+              // var sum = 0.0
+              // for (i = 0; i < input.length; ++i)
+              //   sum += input[i] * input[i]
+              // instant = Math.sqrt(sum / input.length)
+            
+              // console.log('instant: ', instant.toFixed(4) * 100);
+            };
+
+            microphone.connect(analyser);
+            analyser.connect(script)
+            script.connect(audioContext.destination);
           } catch (error) {
             console.log("MediaRecorder error: ", error);
             alert(
@@ -85,7 +124,6 @@ export default class LocalRecorder {
           console.log("this.streamRecorder: ", this.streamRecorder);
 
           this.streamRecorder.ondataavailable = e => {
-            console.log("ondataavailable: ", e);
             this.chunks.push(e.data);
           };
         })

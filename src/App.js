@@ -9,49 +9,65 @@ import LocalRecorder from "./LocalRecorder";
 class App extends Component {
   mLocalRecorder = null;
 
+  state = {
+    loaded: false
+  }
+
+
   componentDidMount() {
     DetectRTC.load(() => {
-      for (let i = 0; i < DetectRTC.audioInputDevices.length; i++) {
-        if (
-          DetectRTC.audioInputDevices[i].deviceId === "default" ||
-          DetectRTC.audioInputDevices[i].deviceId === "communications" ||
-          DetectRTC.audioInputDevices[i].deviceId === "Comunicaciones" ||
-          DetectRTC.audioInputDevices[i].id === "communications"
-        ) {
-          DetectRTC.audioInputDevices.splice(i, 1);
-        }
-      }
-      console.log(DetectRTC.videoInputDevices);
-      console.log(DetectRTC.audioInputDevices);
+      DetectRTC.audioInputDevices = DetectRTC.audioInputDevices.filter(
+        ({ deviceId, id }) => deviceId !== 'default' && deviceId !== 'communications' && deviceId !== 'Comunicaciones' && id !== 'communications'
+      )
 
-      const {
-        deviceId: videoId,
-        label: labelVideo
-      } = DetectRTC.videoInputDevices[0];
-      const {
-        deviceId: audioId,
-        label: labelAudio
-      } = DetectRTC.audioInputDevices[1];
-
-      console.log("video: ", labelVideo, videoId);
-      console.log("audio: ", labelAudio, audioId);
-
-      this.mLocalRecorder = new LocalRecorder(audioId, videoId);
-
-      this.mLocalRecorder.start();
+      this.setState({
+        loaded: true
+      })
     });
   }
 
   render() {
+    const { audioInputDevices, videoInputDevices } = DetectRTC
+    
     return (
       <div className="App">
-        <div id="video-hd" />
-        <video id="video-record" controls />
-        <button onClick={this._handleClickRecord}>Record</button>
-        <button onClick={this._handleClickStop}>Stop</button>
         <header className="App-header">
-          <img src={logo} className="App-logo" alt="logo" />
-          <p>
+          <div>
+            <div>Audios: </div>
+            <div>
+              <select onChange={this._handleChangeAudio}>
+                <option key={'audio-default'}>----Seleccione----</option>
+                {
+                  audioInputDevices.map(({label, id }, index) => (
+                    <option key={`audio-${index}`} value={id}>{label}</option>
+                  ))
+                }
+              </select>
+            </div>
+          </div>
+          <div>
+          <div>Videos: </div>
+            <div>
+              <select onChange={this._handleChangeVideo}>
+                <option key={'video-default'}>----Seleccione----</option>
+                {
+                  videoInputDevices.map(({label, id }, index) => (
+                    <option key={`video-${index}`} value={id}>{label}</option>
+                  ))
+                }
+              </select>
+            </div>
+          </div>
+          <div>
+            <button onClick={this._handleClickStart}>Start</button>
+            <button onClick={this._handleClickRecord}>Record</button>
+            <button onClick={this._handleClickStop}>Stop</button>
+          </div>
+
+          <div id="video-hd" />
+          <video id="video-record" controls />
+          {/* <img src={logo} className="App-logo" alt="logo" /> */}
+          {/* <p>
             Edit <code>src/App.js</code> and save to reload.
           </p>
           <a
@@ -61,10 +77,29 @@ class App extends Component {
             rel="noopener noreferrer"
           >
             Learn React
-          </a>
+          </a> */}
         </header>
       </div>
     );
+  }
+
+  _handleChangeAudio = ev => {
+    this.setState({
+      audioId: ev.target.value
+    })
+  }
+
+  _handleChangeVideo = ev => {
+    this.setState({
+      videoId: ev.target.value
+    })
+  }
+
+  _handleClickStart = () => {
+    const { audioId, videoId } = this.state
+
+    this.mLocalRecorder = new LocalRecorder(audioId, videoId);
+    this.mLocalRecorder.start();
   }
 
   _handleClickRecord = () => {
